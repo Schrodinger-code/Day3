@@ -1,0 +1,194 @@
+__author__ = 'yy'
+#-*- coding: utf-8 -*-
+import pickle
+import sys
+import time
+
+
+def login():
+    accountsR = file('account.pkl', 'rb')
+    global accountsDict
+    accountsDict = pickle.load(accountsR)
+    accountsR.close()
+    counterU = 0
+    counterP = 0
+    while True:
+        if counterU == 3:
+            sys.exit("You have input wrong account 3 times, exit now!")
+        account = int(raw_input("Please input your card number: ").strip())
+        if account in accountsDict:
+            if int(accountsDict[account][-1]) == 1:
+                sys.exit("Your account has been locked!")
+            while True:
+                pwd = int(raw_input("Please input your password: ").strip())
+                if pwd != accountsDict[account][0]:
+                    print "Password incorrect!"
+                    counterP += 1
+                    if counterP == 3:
+                        accountsDict[account][-1] = 1
+                        pickle.dump(accountsDict, file('account.pkl', 'wb'))
+                        sys.exit("You have input wrong password 3 times, so your account has been locked now!")
+                    continue
+                else:
+                    global month
+                    month = int(time.strftime("%Y%m", time.localtime(time.time())))
+                    while True:
+                        print "\033[35;1mYour balance: %s\033[0m" % menueList(account, month)
+        else:
+            print "invaild card number"
+            counterU += 1
+            continue
+
+
+def menueList(a, m):
+    accountsR = file('account.pkl', 'rb')
+    accountsDict = pickle.load(accountsR)
+    accountsR.close()
+    b = str(accountsDict[a][2])
+    dateNow = time.strftime("%Y-%m-%d %H:%M:%S")
+    width = 50
+    welcome = "welcome! %s %s" % (a, dateNow)
+    print " " * int(width-len(welcome)/2), welcome, " " * int(width-len(welcome)/2)
+    print "-" * width * 2
+    print "ACCOUNT: %s" % a
+    print "BALANCE: %s" % b
+    print "BILLING DATE: 30"
+    print "LAST MONTH BILL: %s" % billStatistics(a, (m-1))
+    print "CURRENT MONTH BILL: %s" % billStatistics(a, m)
+    print "-" * width * 2
+    print "1: shopping"
+    print "2: withdrawal"
+    print "3: deposit"
+    print "4: check bill"
+    print "5: exit"
+    choice = int(raw_input("This is the menue, input your choice(1~5): "))
+    return handle(a, b, choice)
+
+
+def handle(a, b, c):
+    ba = b
+    if c == 1:
+        ba = shopping(a, b)
+    elif c == 2:
+        ba = withdrawal(a, b)
+    elif c == 3:
+        ba = deposit(a, b)
+    elif c == 4:
+        print billView(a)
+    elif c == 5:
+        print "\033[34;1mThanks for you using the ATM, bye!\033[0m"
+        sys.exit()
+    else:
+        print "\033[32;1mPlease input a number between 1 ~ 5\033[0m"
+    return ba
+
+def shopping(a, b):
+    productsDict = {}
+    products = open("productList.txt", "r")
+    for line in products.readlines():
+        lineList = line.strip().split(" ")
+        productsDict[lineList[0]] = lineList[1:]
+    while True:
+        print "1: car 200000", " " * 10, "2: iphone 5000"
+        print "3: cat 1500", " " * 12, "4: watch 1000"
+        print "5: cloth 500", " " * 11, "6: book 100"
+        print "7: cup 50", " " * 14, "8: get back"
+        choice = raw_input("This is the products list, please choice what you want to buy(1~8): ").strip()
+        if choice == "8":
+            break
+        elif int(choice) not in range(1, 9):
+            print "Please input a number between 1 ~ 9"
+            continue
+        else:
+            price = int(productsDict[choice][1])
+            if price > int(b):
+                print "\033[33;1mYour balance is not enough to pay this product, please choice others\033[0m"
+                continue
+            product = productsDict[choice][0]
+            tranDate = time.strftime("%Y-%m-%d %H:%M:%S")
+            tranType = "shopping: %s" % product
+            amount = -int(productsDict[choice][1])
+            interest = 0
+            b = int(b) - int(productsDict[choice][1])
+            loger(a, tranDate, tranType, amount, interest, b)
+            print "You have got the %s, your balance: %s" % (product, b)
+            continue
+    products.close()
+    accountsDict[a][2] = b
+    pickle.dump(accountsDict, file('account.pkl', 'wb'))
+    return b
+
+def withdrawal(a, b):
+    while True:
+        cash = raw_input("\033[31;1mInput how much money do you want(100~%s) or input b to get back: \033[0m" % b).strip()
+        if cash == "b":
+            break
+        elif int(cash) > b:
+            print "Your balance is not enough!"
+            continue
+        else:
+            tranDate = time.strftime("%Y-%m-%d %H:%M:%S")
+            tranType = "withdrawal"
+            amount = -int(cash)
+            interest = -int(int(cash) * 0.05)
+            b = int(b) - int(int(cash) * 1.05)
+            loger(a, tranDate, tranType, amount, interest, b)
+            print "You have got %s yuan, your balance: %s" % (cash, b)
+    accountsDict[a][2] = b
+    pickle.dump(accountsDict, file('account.pkl', 'wb'))
+    return b
+
+
+def deposit(a, b):
+    while True:
+        cash = raw_input("Input how much money you want to deposit or input b to get back: ").strip()
+        if cash == "b":
+            break
+        tranDate = time.strftime("%Y-%m-%d %H:%M:%S")
+        tranType = "deposit"
+        amount = int(cash)
+        interest = 0
+        b = int(b) + int(cash)
+        loger(a, tranDate, tranType, amount, interest, b)
+        print "\033[30;1mYou have deposit %s yuan, your balance: %s\033[0m" % (cash, b)
+    accountsDict[a][2] = b
+    pickle.dump(accountsDict, file('account.pkl', 'wb'))
+    print accountsDict
+    return b
+
+
+def billView(a):
+    width = 50
+    print "-" * width * 2
+    print " " * int(width - len(str(a)) / 2), a, " " * int(width - len(str(a)) / 2)
+    print "-" * width * 2
+    print "account|tranDate|tranType|amount|interest|balance"
+    openBill=open("bill.txt", "r")
+    for line in openBill.readlines():
+        if str(a) in line.split("|"):
+            print line.strip("\n")
+    print "-" * width * 2
+    return a
+
+def loger(account, tranDate, tranType, amount, interest, b):
+    logFile = 'bill.txt'
+    openLogFile = open(logFile, 'a')
+    msg = "%s|%s|%s|%s|%s|%s\n" % (account, tranDate, tranType, amount, interest, b)
+    openLogFile.write(msg)
+    openLogFile.close()
+
+
+def billStatistics(a, m):
+    bill = 0
+    openBill = open("bill.txt", "r")
+    for line in openBill.readlines():
+        lineList = line.strip().split("|")
+        billM = int(lineList[1].strip().split("-")[0] + lineList[1].strip().split("-")[1])
+        if int(lineList[0]) == a and billM == m:
+            bill += (int(lineList[3])+int(lineList[4]))
+    openBill.close()
+    return -bill
+
+
+if __name__ == "__main__":
+    login()
