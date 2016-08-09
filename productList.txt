@@ -1,0 +1,7 @@
+1 car 200000
+2 iphone 5000
+3 cat 1500
+4 watch 1000
+5 cloth 500
+6 book 100
+7 cup 50
