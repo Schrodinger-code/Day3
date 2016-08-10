@@ -5,6 +5,7 @@ import sys
 import time
 
 
+#登录验证模块
 def login():
     accountsR = file('account.pkl', 'rb')
     global accountsDict
@@ -13,7 +14,7 @@ def login():
     counterU = 0
     counterP = 0
     while True:
-        if counterU == 3:
+        if counterU == 3:#登录检查账户状态，若被锁定则直接退出
             sys.exit("You have input wrong account 3 times, exit now!")
         account = int(raw_input("Please input your card number: ").strip())
         if account in accountsDict:
@@ -24,7 +25,7 @@ def login():
                 if pwd != accountsDict[account][0]:
                     print "Password incorrect!"
                     counterP += 1
-                    if counterP == 3:
+                    if counterP == 3:#登录密码输错3次锁定账户无法登录（0为正常，1为锁定）
                         accountsDict[account][-1] = 1
                         pickle.dump(accountsDict, file('account.pkl', 'wb'))
                         sys.exit("You have input wrong password 3 times, so your account has been locked now!")
@@ -40,6 +41,7 @@ def login():
             continue
 
 
+#打印清单
 def menueList(a, m):
     accountsR = file('account.pkl', 'rb')
     accountsDict = pickle.load(accountsR)
@@ -65,6 +67,7 @@ def menueList(a, m):
     return handle(a, b, choice)
 
 
+#操作处理
 def handle(a, b, c):
     ba = b
     if c == 1:
@@ -82,6 +85,8 @@ def handle(a, b, c):
         print "\033[32;1mPlease input a number between 1 ~ 5\033[0m"
     return ba
 
+
+#购物
 def shopping(a, b):
     productsDict = {}
     products = open("productList.txt", "r")
@@ -118,6 +123,8 @@ def shopping(a, b):
     pickle.dump(accountsDict, file('account.pkl', 'wb'))
     return b
 
+
+#取现
 def withdrawal(a, b):
     while True:
         cash = raw_input("\033[31;1mInput how much money do you want(100~%s) or input b to get back: \033[0m" % b).strip()
@@ -139,6 +146,7 @@ def withdrawal(a, b):
     return b
 
 
+#存款
 def deposit(a, b):
     while True:
         cash = raw_input("Input how much money you want to deposit or input b to get back: ").strip()
@@ -157,6 +165,7 @@ def deposit(a, b):
     return b
 
 
+#查看账单
 def billView(a):
     width = 50
     print "-" * width * 2
@@ -170,6 +179,8 @@ def billView(a):
     print "-" * width * 2
     return a
 
+
+#交易记录
 def loger(account, tranDate, tranType, amount, interest, b):
     logFile = 'bill.txt'
     openLogFile = open(logFile, 'a')
@@ -178,6 +189,7 @@ def loger(account, tranDate, tranType, amount, interest, b):
     openLogFile.close()
 
 
+#账单统计
 def billStatistics(a, m):
     bill = 0
     openBill = open("bill.txt", "r")
